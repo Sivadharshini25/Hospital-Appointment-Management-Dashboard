@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>City Hospital — Appointment System</title>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── RESET ── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  /* Olive / pastel green palette */
+  --ink:        #2C3B1F;
+  --ink2:       #3D5226;
+  --olive:      #5A6B3A;
+  --olive-l:    #7A8C58;
+  --sage:       #A8B88A;
+  --sage-l:     #C8D4AE;
+  --mint:       #DDE8C8;
+  --mint-l:     #EDF4E2;
+  --cream:      #F5F8EE;
+  --white:      #FDFEF9;
+  --border:     #C8D4AE;
+  --border-d:   #A8B88A;
+  --muted:      #6B7A55;
+  --red:        #8B2020;
+  --red-l:      #FEF2F2;
+  --amber:      #7C5A00;
+  --amber-l:    #FFFBEB;
+  --sw:         220px;
+  --bar:        56px;
+  font-family: 'Times New Roman', Times, serif;
+}
+
+body { background: var(--cream); color: var(--ink); min-height:100vh; }
+
+/* ── TOPBAR ── */
+.topbar {
+  position:fixed; top:0; left:0; right:0; height:var(--bar);
+  background:var(--ink); z-index:200;
+  display:flex; align-items:center; padding:0 24px; gap:16px;
+  border-bottom:3px solid var(--olive);
+}
+.logo-cross {
+  width:32px; height:32px; background:var(--olive-l); border-radius:6px;
+  display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0;
+}
+.logo-name { font-size:17px; font-weight:normal; color:var(--mint); letter-spacing:.5px; font-style:italic; }
+.logo-tag  { font-size:10px; color:var(--sage); letter-spacing:1.2px; text-transform:uppercase; }
+.topbar-center { flex:1; text-align:center; font-size:11.5px; color:var(--sage); letter-spacing:.4px; font-style:italic; }
+.topbar-right  { display:flex; align-items:center; gap:10px; }
+.pill { font-size:11px; padding:4px 11px; border-radius:3px; font-family:'Times New Roman',serif; }
+.pill-olive  { background:rgba(90,107,58,.3); color:var(--mint); border:1px solid var(--olive); }
+.pill-sage   { background:rgba(168,184,138,.15); color:var(--sage-l); border:1px solid var(--sage); }
+.btn-dl { background:transparent; color:var(--sage-l); border:1px solid var(--olive-l); padding:7px 15px; border-radius:3px; font-size:12px; cursor:pointer; font-family:'Times New Roman',serif; transition:.15s; letter-spacing:.3px; }
+.btn-dl:hover { background:var(--olive); color:var(--white); }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  position:fixed; top:var(--bar); left:0; bottom:0; width:var(--sw);
+  background:var(--white); border-right:1px solid var(--border);
+  z-index:100; padding:20px 10px; display:flex; flex-direction:column; overflow-y:auto;
+}
+.nav-sec { font-size:9.5px; font-weight:normal; color:var(--muted); text-transform:uppercase; letter-spacing:1.2px; padding:10px 12px 4px; font-style:italic; }
+.nav-btn {
+  display:flex; align-items:center; gap:9px; width:100%;
+  padding:9px 12px; border-radius:3px; border:none; background:none;
+  cursor:pointer; font-family:'Times New Roman',serif; font-size:13.5px;
+  color:var(--muted); transition:.12s; text-align:left; margin-bottom:1px;
+}
+.nav-btn:hover { background:var(--mint-l); color:var(--ink); }
+.nav-btn.active { background:var(--mint); color:var(--ink2); font-style:italic; border-left:3px solid var(--olive); padding-left:9px; }
+.nav-ico { font-size:14px; width:18px; text-align:center; flex-shrink:0; }
+
+.sidebar-info {
+  margin-top:auto; border:1px solid var(--border); border-radius:3px;
+  padding:12px 13px; background:var(--mint-l);
+}
+.si-title { font-size:11px; color:var(--olive); font-style:italic; margin-bottom:5px; }
+.si-text  { font-size:11px; color:var(--muted); line-height:1.6; }
+
+/* ── MAIN ── */
+.main { margin-left:var(--sw); padding-top:var(--bar); min-height:100vh; }
+.page { display:none; padding:26px 28px; }
+.page.active { display:block; }
+
+/* ── PAGE HEADERS ── */
+.pg-head { margin-bottom:22px; border-bottom:1px solid var(--border); padding-bottom:12px; }
+.pg-title { font-size:22px; font-weight:normal; color:var(--ink2); font-style:italic; letter-spacing:.3px; }
+.pg-sub   { font-size:12.5px; color:var(--muted); margin-top:3px; }
+
+/* ── KPI ROW ── */
+.kpi-row { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:20px; }
+.kpi {
+  background:var(--white); border-radius:3px; padding:15px 17px;
+  border:1px solid var(--border); position:relative; overflow:hidden;
+}
+.kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--ac,var(--olive)); }
+.kpi-lbl { font-size:9.5px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:6px; font-style:italic; }
+.kpi-val { font-size:26px; color:var(--ink2); line-height:1; }
+.kpi-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+
+/* ── CHART GRID ── */
+.cg2  { display:grid; grid-template-columns:1fr 1fr;       gap:16px; margin-bottom:16px; }
+.cg3  { display:grid; grid-template-columns:1fr 1fr 1fr;   gap:16px; margin-bottom:16px; }
+.cg31 { display:grid; grid-template-columns:1.5fr 1fr;     gap:16px; margin-bottom:16px; }
+.c-card { background:var(--white); border-radius:3px; padding:18px 20px; border:1px solid var(--border); }
+.c-card.wide { grid-column:1/-1; }
+.c-title { font-size:13px; color:var(--ink2); margin-bottom:2px; font-style:italic; }
+.c-sub   { font-size:11px; color:var(--muted); margin-bottom:14px; }
+.c-wrap  { position:relative; height:200px; }
+.c-wrap.tall { height:230px; }
+.c-wrap.short { height:170px; }
+
+/* ── BOOKING FORM ── */
+.booking-layout { display:grid; grid-template-columns:1fr 380px; gap:20px; align-items:start; }
+.f-card { background:var(--white); border-radius:3px; padding:26px 28px; border:1px solid var(--border); }
+.f-title { font-size:16px; color:var(--ink2); font-style:italic; margin-bottom:18px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; margin-bottom:16px; }
+.fg { display:flex; flex-direction:column; gap:5px; }
+.fg.full { grid-column:1/-1; }
+label { font-size:10.5px; text-transform:uppercase; letter-spacing:.7px; color:var(--muted); font-style:italic; }
+input, select, textarea {
+  padding:9px 13px; border-radius:3px; border:1px solid var(--border);
+  font-family:'Times New Roman',serif; font-size:13.5px; color:var(--ink);
+  background:var(--cream); transition:border-color .12s; width:100%;
+}
+input:focus, select:focus, textarea:focus { outline:none; border-color:var(--olive); background:var(--white); }
+textarea { resize:vertical; min-height:60px; }
+
+/* Slot grid */
+.slot-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-top:6px; }
+.slot-btn {
+  padding:8px 4px; border:1px solid var(--border); border-radius:3px;
+  font-family:'Times New Roman',serif; font-size:12.5px; color:var(--muted);
+  background:var(--cream); cursor:pointer; transition:.12s; text-align:center;
+}
+.slot-btn:hover:not(.taken):not(.selected) { border-color:var(--olive-l); background:var(--mint-l); color:var(--ink); }
+.slot-btn.selected { background:var(--olive); color:var(--white); border-color:var(--olive); }
+.slot-btn.taken    { background:#F5F5F5; color:#CCC; cursor:not-allowed; text-decoration:line-through; font-size:11px; }
+
+.form-actions { display:flex; gap:10px; margin-top:18px; }
+.btn-book { background:var(--olive); color:var(--white); border:none; padding:11px 24px; border-radius:3px; font-family:'Times New Roman',serif; font-size:14px; cursor:pointer; transition:.12s; letter-spacing:.3px; }
+.btn-book:hover { background:var(--ink2); }
+.btn-clear { background:transparent; color:var(--muted); border:1px solid var(--border); padding:11px 18px; border-radius:3px; font-family:'Times New Roman',serif; font-size:14px; cursor:pointer; }
+
+/* Booking panel */
+.booking-panel { display:flex; flex-direction:column; gap:14px; }
+.panel-card { background:var(--white); border-radius:3px; padding:18px 20px; border:1px solid var(--border); }
+.panel-title { font-size:13px; font-style:italic; color:var(--ink2); margin-bottom:12px; border-bottom:1px solid var(--mint); padding-bottom:7px; }
+.rec-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--mint-l); font-size:12.5px; }
+.rec-row:last-child { border:none; }
+.rec-type { color:var(--muted); font-style:italic; }
+.rec-mins { font-size:13px; color:var(--ink2); }
+.rec-mins.current { color:var(--red); }
+.rec-mins.good    { color:var(--olive); }
+
+/* ── DATA TABLE ── */
+.tbl-card { background:var(--white); border-radius:3px; border:1px solid var(--border); overflow:hidden; margin-bottom:16px; }
+.tbl-head { padding:13px 18px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.tbl-title { font-size:14px; font-style:italic; color:var(--ink2); }
+.tbl-wrap  { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:12.5px; }
+th { background:var(--mint); padding:9px 13px; font-size:10px; font-weight:normal; color:var(--ink2); text-transform:uppercase; letter-spacing:.6px; border-bottom:1px solid var(--border); text-align:left; font-style:italic; white-space:nowrap; }
+td { padding:9px 13px; border-bottom:1px solid var(--mint-l); color:var(--ink); }
+tr:last-child td { border:none; }
+tr:hover td { background:var(--mint-l); }
+.st { padding:3px 9px; border-radius:2px; font-size:10.5px; display:inline-block; font-style:italic; }
+.st-confirmed { background:#E8F0E0; color:var(--ink2); }
+.st-completed { background:var(--mint); color:var(--olive); }
+.st-cancelled { background:var(--red-l); color:var(--red); }
+.st-noshow    { background:var(--amber-l); color:var(--amber); }
+
+/* ── SLOT GUIDE ── */
+.guide-intro { background:var(--mint-l); border:1px solid var(--border); border-radius:3px; padding:14px 18px; margin-bottom:18px; font-size:13px; color:var(--muted); font-style:italic; line-height:1.6; }
+.guide-table { width:100%; border-collapse:collapse; font-size:13px; }
+.guide-table th { background:var(--ink2); color:var(--white); padding:10px 14px; font-weight:normal; font-style:italic; font-size:11px; text-transform:uppercase; letter-spacing:.6px; text-align:center; border:1px solid var(--ink); }
+.guide-table td { padding:11px 14px; border:1px solid var(--border); text-align:center; vertical-align:middle; }
+.guide-table tr:nth-child(even) td { background:var(--cream); }
+.guide-table tr:hover td { background:var(--mint-l); }
+.g-pill { padding:4px 11px; border-radius:2px; font-size:11.5px; font-style:italic; display:inline-block; }
+.g-current { background:var(--red-l); color:var(--red); border:1px solid #FCA5A5; }
+.g-rec     { background:var(--mint); color:var(--olive); border:1px solid var(--sage); }
+.g-ok      { background:var(--mint); color:var(--olive); border:1px solid var(--sage); }
+.g-warn    { background:var(--amber-l); color:var(--amber); border:1px solid #FDE68A; }
+.g-urgent  { background:var(--red-l); color:var(--red); border:1px solid #FCA5A5; }
+.diff-bar  { height:5px; background:var(--mint); border-radius:2px; margin-top:5px; overflow:hidden; }
+.diff-fill { height:100%; border-radius:2px; }
+
+/* ── TOAST ── */
+.toast { position:fixed; bottom:22px; right:22px; padding:13px 20px; border-radius:3px; font-size:13px; font-style:italic; color:var(--white); z-index:999; transform:translateY(80px); opacity:0; transition:.28s; max-width:340px; border-left:4px solid var(--sage); }
+.toast.show { transform:translateY(0); opacity:1; }
+.toast.ok  { background:var(--ink2); }
+.toast.err { background:var(--red); border-left-color:#FCA5A5; }
+
+/* ── CONFIRM MODAL ── */
+.modal-bg { position:fixed; inset:0; background:rgba(44,59,31,.4); z-index:500; display:none; align-items:center; justify-content:center; }
+.modal-bg.show { display:flex; }
+.modal { background:var(--white); border-radius:4px; padding:30px 32px; max-width:420px; width:90%; border:1px solid var(--border); }
+.modal-title { font-size:17px; font-style:italic; color:var(--ink2); margin-bottom:14px; border-bottom:1px solid var(--mint); padding-bottom:8px; }
+.modal-row { display:flex; justify-content:space-between; padding:7px 0; font-size:13px; border-bottom:1px solid var(--mint-l); }
+.modal-row:last-of-type { border:none; }
+.modal-lbl { color:var(--muted); font-style:italic; }
+.modal-val { color:var(--ink); font-weight:normal; }
+.modal-actions { display:flex; gap:10px; margin-top:18px; }
+.modal-apt-id { background:var(--mint); border-radius:3px; padding:12px 16px; text-align:center; margin:14px 0; font-size:15px; color:var(--ink2); font-style:italic; }
+</style>
+</head>
+<body>
+
+<!-- ══ TOPBAR ══ -->
+<header class="topbar">
+  <div class="logo-cross">✚</div>
+  <div>
+    <div class="logo-name">City General Hospital</div>
+    <div class="logo-tag">Appointment Management System</div>
+  </div>
+  <div class="topbar-center">Patient Records · Doctor Scheduling · Slot Analysis</div>
+  <div class="topbar-right">
+    <span class="pill pill-olive" id="chip-total">— appointments</span>
+    <span class="pill pill-sage" id="chip-today">Excel Backend</span>
+    <button class="btn-dl" onclick="downloadExcel()">⬇ Export Excel</button>
+  </div>
+</header>
+
+<!-- ══ SIDEBAR ══ -->
+<nav class="sidebar">
+  <div class="nav-sec">Main</div>
+  <button class="nav-btn active" onclick="nav('dashboard',this)"><span class="nav-ico">📊</span>Dashboard</button>
+  <button class="nav-btn" onclick="nav('booking',this)"><span class="nav-ico">📅</span>Book Appointment</button>
+
+  <div class="nav-sec">Records & Analysis</div>
+  <button class="nav-btn" onclick="nav('records',this)"><span class="nav-ico">📋</span>Appointments</button>
+  <button class="nav-btn" onclick="nav('slotguide',this)"><span class="nav-ico">🕐</span>Slot Guide</button>
+
+  <div class="sidebar-info">
+    <div class="si-title">About This System</div>
+    <div class="si-text">All data is stored in <em>hospital_data.xlsx</em>. The Slot Guide page analyses how the current 15-min flat allocation compares to what each patient type actually needs.</div>
+  </div>
+</nav>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+
+  <!-- ── DASHBOARD ── -->
+  <div class="page active" id="pg-dashboard">
+    <div class="pg-head">
+      <div class="pg-title">Hospital Dashboard</div>
+      <div class="pg-sub">Overview of appointments, doctor performance, and patient flow</div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi" style="--ac:var(--olive)"><div class="kpi-lbl">Total Appointments</div><div class="kpi-val" id="k-total">—</div><div class="kpi-sub">all records</div></div>
+      <div class="kpi" style="--ac:#4A7C59"><div class="kpi-lbl">Confirmed</div><div class="kpi-val" id="k-confirmed">—</div><div class="kpi-sub">upcoming</div></div>
+      <div class="kpi" style="--ac:var(--sage)"><div class="kpi-lbl">Completed</div><div class="kpi-val" id="k-completed">—</div><div class="kpi-sub" id="k-comprate">—</div></div>
+      <div class="kpi" style="--ac:var(--amber)"><div class="kpi-lbl">Cancelled</div><div class="kpi-val" id="k-cancelled">—</div><div class="kpi-sub">appointments</div></div>
+      <div class="kpi" style="--ac:var(--red)"><div class="kpi-lbl">No-Show</div><div class="kpi-val" id="k-noshow">—</div><div class="kpi-sub">did not attend</div></div>
+    </div>
+
+    <!-- Row 1 -->
+    <div class="cg2">
+      <div class="c-card">
+        <div class="c-title">Doctor Workload — Patients per Doctor</div>
+        <div class="c-sub">Total appointments handled by each doctor</div>
+        <div class="c-wrap tall"><canvas id="cDocWork"></canvas></div>
+      </div>
+      <div class="c-card">
+        <div class="c-title">Doctor Performance — Completion Rate</div>
+        <div class="c-sub">Percentage of appointments completed vs total booked</div>
+        <div class="c-wrap tall"><canvas id="cDocPerf"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="cg3">
+      <div class="c-card">
+        <div class="c-title">Appointment Status Distribution</div>
+        <div class="c-sub">Confirmed · Completed · Cancelled · No-Show</div>
+        <div class="c-wrap"><canvas id="cStatus"></canvas></div>
+      </div>
+      <div class="c-card">
+        <div class="c-title">Patient Type Breakdown</div>
+        <div class="c-sub">Number of appointments per patient category</div>
+        <div class="c-wrap"><canvas id="cPatType"></canvas></div>
+      </div>
+      <div class="c-card">
+        <div class="c-title">Department Load</div>
+        <div class="c-sub">Appointments by department</div>
+        <div class="c-wrap"><canvas id="cDept"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 3 -->
+    <div class="cg31">
+      <div class="c-card">
+        <div class="c-title">Patient Type Mix per Doctor</div>
+        <div class="c-sub">Stacked bar — case complexity distribution by doctor</div>
+        <div class="c-wrap tall"><canvas id="cPtByDoc"></canvas></div>
+      </div>
+      <div class="c-card">
+        <div class="c-title">Most Popular Time Slots</div>
+        <div class="c-sub">Top 8 booked appointment times</div>
+        <div class="c-wrap tall"><canvas id="cSlotPop"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 4 -->
+    <div class="cg2">
+      <div class="c-card">
+        <div class="c-title">Daily Appointment Trend</div>
+        <div class="c-sub">Bookings over the last 14 days</div>
+        <div class="c-wrap short"><canvas id="cTrend"></canvas></div>
+      </div>
+      <div class="c-card">
+        <div class="c-title">No-Show &amp; Cancellation by Doctor</div>
+        <div class="c-sub">Grouped bar — attendance issues per doctor</div>
+        <div class="c-wrap short"><canvas id="cNoShow"></canvas></div>
+      </div>
+    </div>
+  </div><!-- /dashboard -->
+
+  <!-- ── BOOKING ── -->
+  <div class="page" id="pg-booking">
+    <div class="pg-head">
+      <div class="pg-title">Book an Appointment</div>
+      <div class="pg-sub">Select a doctor, patient type, and available time slot — saved directly to Excel</div>
+    </div>
+
+    <div class="booking-layout">
+      <div class="f-card">
+        <div class="f-title">Appointment Details</div>
+        <div class="form-grid">
+          <div class="fg">
+            <label>Patient Name</label>
+            <input type="text" id="f-name" placeholder="Full name">
+          </div>
+          <div class="fg">
+            <label>Date</label>
+            <input type="date" id="f-date" onchange="loadSlots()">
+          </div>
+          <div class="fg">
+            <label>Doctor</label>
+            <select id="f-doctor" onchange="loadSlots(); updateRecNote()">
+              <option value="">— Select Doctor —</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Patient Type</label>
+            <select id="f-ptype" onchange="updateRecNote()">
+              <option value="">— Select Type —</option>
+            </select>
+          </div>
+          <div class="fg full">
+            <label>Select Time Slot</label>
+            <div class="slot-grid" id="slotGrid">
+              <div style="grid-column:1/-1;font-size:12px;color:var(--muted);font-style:italic;padding:8px 0">Select a doctor and date first</div>
+            </div>
+            <input type="hidden" id="f-slot">
+          </div>
+          <div class="fg full">
+            <label>Notes (optional)</label>
+            <textarea id="f-notes" placeholder="Any additional information..."></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-book" onclick="confirmBooking()">Confirm Booking</button>
+          <button class="btn-clear" onclick="clearForm()">Clear</button>
+        </div>
+      </div>
+
+      <!-- Right panel -->
+      <div class="booking-panel">
+        <div class="panel-card">
+          <div class="panel-title">Recommended Slot Durations</div>
+          <div id="recRows">
+            <!-- populated by JS -->
+          </div>
+        </div>
+        <div class="panel-card" id="selDoctor" style="display:none">
+          <div class="panel-title">Selected Doctor</div>
+          <div id="selDoctorContent"></div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /booking -->
+
+  <!-- ── RECORDS ── -->
+  <div class="page" id="pg-records">
+    <div class="pg-head">
+      <div class="pg-title">Appointment Records</div>
+      <div class="pg-sub">Most recent 30 appointments from hospital_data.xlsx</div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-head">
+        <div class="tbl-title">All Appointments</div>
+        <button class="btn-clear" style="padding:6px 14px;font-size:12px" onclick="loadRecords()">↻ Refresh</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>ID</th><th>Date</th><th>Patient</th><th>Doctor</th>
+            <th>Department</th><th>Type</th><th>Slot</th><th>Status</th>
+          </tr></thead>
+          <tbody id="recBody"><tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted);font-style:italic">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- /records -->
+
+  <!-- ── SLOT GUIDE ── -->
+  <div class="page" id="pg-slotguide">
+    <div class="pg-head">
+      <div class="pg-title">Appointment Slot Duration Guide</div>
+      <div class="pg-sub">Analysis of current 15-minute allocation vs what each patient type actually requires</div>
+    </div>
+
+    <div class="guide-intro">
+      The hospital currently assigns every patient a <strong>15-minute slot</strong>, regardless of their case type. The table below, derived from the appointment data, shows the average time each patient type actually takes — and what the recommended slot duration should be.
+    </div>
+
+    <div class="cg2" style="margin-bottom:18px">
+      <div class="c-card">
+        <div class="c-title">Current (15 min) vs Recommended vs Avg Actual</div>
+        <div class="c-sub">The gap between the red line and the bars is where delays originate</div>
+        <div class="c-wrap tall"><canvas id="cGuideChart"></canvas></div>
+      </div>
+      <div class="c-card">
+        <div class="c-title">Delay Rate by Patient Type</div>
+        <div class="c-sub">What percentage of each type runs over the 15-min slot</div>
+        <div class="c-wrap tall"><canvas id="cGuideDelay"></canvas></div>
+      </div>
+    </div>
+
+    <div class="c-card">
+      <div class="c-title" style="margin-bottom:14px">Slot Allocation Reference Table</div>
+      <table class="guide-table" id="guideTable">
+        <thead><tr>
+          <th style="text-align:left">Patient Type</th>
+          <th>Current Slot</th><th>Recommended</th><th>Avg Actual</th>
+          <th>Avg Overrun</th><th>Delay Rate</th><th>Recommendation</th>
+        </tr></thead>
+        <tbody id="guideTbody"></tbody>
+      </table>
+    </div>
+  </div><!-- /slotguide -->
+
+</div><!-- /main -->
+
+<!-- ══ CONFIRM MODAL ══ -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Confirm Appointment</div>
+    <div id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn-book" id="modalConfirm">Book Appointment</button>
+      <button class="btn-clear" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+const charts = {};
+let meta = {};
+let selectedSlot = null;
+
+function dc(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+// Olive/green palette
+const C = {
+  olive:   '#5A6B3A', oliveL: 'rgba(90,107,58,.18)',
+  ink2:    '#3D5226', ink2L:  'rgba(61,82,38,.15)',
+  sage:    '#A8B88A', sageL:  'rgba(168,184,138,.25)',
+  mint:    '#C8D4AE', mintL:  'rgba(200,212,174,.2)',
+  red:     '#8B2020', redL:   'rgba(139,32,32,.15)',
+  amber:   '#7C5A00', amberL: 'rgba(124,90,0,.15)',
+  teal:    '#2D6A4F', tealL:  'rgba(45,106,79,.18)',
+  purple:  '#4A3728', purpleL:'rgba(74,55,40,.15)',
+  steel:   '#3A5068', steelL: 'rgba(58,80,104,.15)',
+};
+
+Chart.defaults.font.family = "'Times New Roman', Times, serif";
+Chart.defaults.font.size   = 11;
+Chart.defaults.color       = '#6B7A55';
+
+// ── Navigation ───────────────────────────────────────────────────────────────
+function nav(id, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pg-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='dashboard')  loadDashboard();
+  if(id==='records')    loadRecords();
+  if(id==='slotguide')  loadSlotGuide();
+  if(id==='booking')    initBooking();
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast '+type; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// ── Load meta ─────────────────────────────────────────────────────────────────
+async function loadMeta(){
+  try{
+    const r = await fetch('/api/meta');
+    meta = await r.json();
+  } catch(e){ console.error(e); }
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────────────────
+async function loadDashboard(){
+  try{
+    const r = await fetch('/api/dashboard');
+    const d = await r.json();
+    renderKPIs(d.kpis);
+    renderDashCharts(d);
+    document.getElementById('chip-total').textContent = d.kpis.total+' appointments';
+  } catch(e){ toast('Cannot reach server','err'); }
+}
+
+function renderKPIs(k){
+  document.getElementById('k-total').textContent     = k.total;
+  document.getElementById('k-confirmed').textContent = k.confirmed;
+  document.getElementById('k-completed').textContent = k.completed;
+  document.getElementById('k-comprate').textContent  = k.comp_rate+'% completion rate';
+  document.getElementById('k-cancelled').textContent = k.cancelled;
+  document.getElementById('k-noshow').textContent    = k.noshow;
+}
+
+function renderDashCharts(d){
+  const dcs  = d.doc_stats;
+  const pts  = d.pt_stats;
+  const ptbd = d.pt_by_doc;
+  const sc   = d.status_dist;
+  const tr   = d.trend;
+  const sl   = d.slots_list;
+  const dp   = d.dept_stats;
+
+  const docNames = dcs.map(x=>x.doctor.replace('Dr. ',''));
+
+  // 1. Doctor workload — horizontal bar
+  dc('docWork');
+  charts.docWork = new Chart(document.getElementById('cDocWork'),{
+    type:'bar',
+    data:{
+      labels: docNames,
+      datasets:[
+        {label:'Completed', data:dcs.map(x=>x.completed), backgroundColor:C.olive,   borderRadius:3},
+        {label:'Confirmed', data:dcs.map(x=>x.confirmed), backgroundColor:C.sageL, borderColor:C.sage, borderWidth:1, borderRadius:3},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:11}}}},
+      scales:{x:{grid:{color:'#EDF4E2'},stacked:false},y:{grid:{display:false}}}
+    }
+  });
+
+  // 2. Doctor completion rate — bar
+  dc('docPerf');
+  const perfColors = dcs.map(x=>x.comp_rate>=70?C.olive:x.comp_rate>=50?C.amber:C.red);
+  charts.docPerf = new Chart(document.getElementById('cDocPerf'),{
+    type:'bar',
+    data:{
+      labels: docNames,
+      datasets:[{label:'Completion Rate %', data:dcs.map(x=>x.comp_rate), backgroundColor:perfColors, borderRadius:3}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{display:false}},
+        y:{grid:{color:'#EDF4E2'}, min:0, max:100,
+           title:{display:true,text:'%',font:{size:10},color:'#6B7A55'}}
+      }
+    }
+  });
+
+  // 3. Status doughnut
+  dc('status');
+  charts.status = new Chart(document.getElementById('cStatus'),{
+    type:'doughnut',
+    data:{
+      labels:['Confirmed','Completed','Cancelled','No-Show'],
+      datasets:[{data:[sc.Confirmed,sc.Completed,sc.Cancelled,sc['No-Show']],
+        backgroundColor:[C.teal,C.olive,C.red,C.amber],
+        borderWidth:0, hoverOffset:5}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+      plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}}
+  });
+
+  // 4. Patient type — horizontal bar
+  dc('patType');
+  const ptColors = [C.olive,C.sage,C.red,C.amber,C.teal];
+  charts.patType = new Chart(document.getElementById('cPatType'),{
+    type:'bar',
+    data:{
+      labels: pts.map(p=>p.type),
+      datasets:[{label:'Count', data:pts.map(p=>p.count), backgroundColor:ptColors, borderRadius:3}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'#EDF4E2'}},y:{grid:{display:false}}}
+    }
+  });
+
+  // 5. Department — polar area
+  dc('dept');
+  const deptColors = [C.olive,C.teal,C.sage,C.amber,C.red].map(c=>c+'cc');
+  charts.dept = new Chart(document.getElementById('cDept'),{
+    type:'polarArea',
+    data:{
+      labels: dp.map(x=>x.dept),
+      datasets:[{data:dp.map(x=>x.count), backgroundColor:deptColors, borderWidth:0}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}},
+      scales:{r:{grid:{color:'#DDE8C8'},ticks:{display:false}}}
+    }
+  });
+
+  // 6. Patient type per doctor — stacked bar
+  dc('ptByDoc');
+  const ptColors2 = [C.olive,C.sage,C.red,C.amber,C.teal];
+  const ptTypes   = ['New Patient','Follow-up','Chronic Case','Emergency','Consultation'];
+  charts.ptByDoc = new Chart(document.getElementById('cPtByDoc'),{
+    type:'bar',
+    data:{
+      labels: ptbd.map(x=>x.doctor),
+      datasets: ptTypes.map((pt,i)=>({
+        label:pt, data:ptbd.map(x=>x[pt]||0),
+        backgroundColor:ptColors2[i], borderRadius:2,
+      }))
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:10}}}},
+      scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid:{color:'#EDF4E2'}}}
+    }
+  });
+
+  // 7. Slot popularity — bar
+  dc('slotPop');
+  charts.slotPop = new Chart(document.getElementById('cSlotPop'),{
+    type:'bar',
+    data:{
+      labels: sl.slice(0,8).map(x=>x.slot),
+      datasets:[{label:'Bookings', data:sl.slice(0,8).map(x=>x.count),
+        backgroundColor:C.mint, borderColor:C.sage, borderWidth:1, borderRadius:3}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#EDF4E2'},beginAtZero:true}}
+    }
+  });
+
+  // 8. Daily trend — line
+  dc('trend');
+  charts.trend = new Chart(document.getElementById('cTrend'),{
+    type:'line',
+    data:{
+      labels: tr.map(x=>x.date.slice(5)),
+      datasets:[{label:'Bookings', data:tr.map(x=>x.count),
+        borderColor:C.olive, backgroundColor:C.oliveL, fill:true,
+        tension:.35, pointRadius:3, pointBackgroundColor:C.olive}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#EDF4E2'},beginAtZero:true}}
+    }
+  });
+
+  // 9. No-show + cancellation by doctor — grouped bar
+  dc('noShow');
+  charts.noShow = new Chart(document.getElementById('cNoShow'),{
+    type:'bar',
+    data:{
+      labels: docNames,
+      datasets:[
+        {label:'Cancelled', data:dcs.map(x=>x.cancelled), backgroundColor:C.amber, borderRadius:3},
+        {label:'No-Show',   data:dcs.map(x=>x.noshow),    backgroundColor:C.red,   borderRadius:3},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:11}}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#EDF4E2'},beginAtZero:true}}
+    }
+  });
+}
+
+// ── BOOKING ──────────────────────────────────────────────────────────────────
+async function initBooking(){
+  await loadMeta();
+
+  // Populate doctor dropdown
+  const ds = document.getElementById('f-doctor');
+  ds.innerHTML = '<option value="">— Select Doctor —</option>';
+  (meta.doctors||[]).forEach(d=>{
+    const o = document.createElement('option');
+    o.value = d.name; o.textContent = `${d.name} — ${d.dept}`;
+    ds.appendChild(o);
+  });
+
+  // Populate patient type dropdown
+  const pt = document.getElementById('f-ptype');
+  pt.innerHTML = '<option value="">— Select Type —</option>';
+  (meta.patient_types||[]).forEach(t=>{
+    const o = document.createElement('option'); o.value=t; o.textContent=t; pt.appendChild(o);
+  });
+
+  // Recommended slot panel
+  const rec = meta.recommended_slots || {};
+  document.getElementById('recRows').innerHTML = Object.entries(rec).map(([type,mins])=>{
+    const isCurrent = mins === 15;
+    return `<div class="rec-row">
+      <span class="rec-type">${type}</span>
+      <span class="rec-mins ${isCurrent?'good':''}">${mins} min</span>
+    </div>`;
+  }).join('');
+}
+
+function updateRecNote(){
+  const doc   = document.getElementById('f-doctor').value;
+  const ptype = document.getElementById('f-ptype').value;
+  const panel = document.getElementById('selDoctor');
+  if(!doc){ panel.style.display='none'; return; }
+  const docObj = (meta.doctors||[]).find(d=>d.name===doc);
+  if(!docObj){ panel.style.display='none'; return; }
+  const rec = (meta.recommended_slots||{})[ptype] || 15;
+  panel.style.display = 'block';
+  document.getElementById('selDoctorContent').innerHTML = `
+    <div class="rec-row"><span class="rec-type">Doctor</span><span class="rec-mins">${docObj.name}</span></div>
+    <div class="rec-row"><span class="rec-type">Department</span><span class="rec-mins">${docObj.dept}</span></div>
+    ${ptype?`<div class="rec-row"><span class="rec-type">Patient type</span><span class="rec-mins">${ptype}</span></div>
+    <div class="rec-row"><span class="rec-type">Recommended slot</span><span class="rec-mins ${rec>15?'':'good'}" style="${rec>15?'color:var(--amber)':''}">${rec} min</span></div>`:''}
+  `;
+}
+
+async function loadSlots(){
+  const doctor = document.getElementById('f-doctor').value;
+  const dt     = document.getElementById('f-date').value;
+  const grid   = document.getElementById('slotGrid');
+  selectedSlot = null;
+  document.getElementById('f-slot').value = '';
+
+  if(!doctor || !dt){
+    grid.innerHTML = '<div style="grid-column:1/-1;font-size:12px;color:var(--muted);font-style:italic;padding:8px 0">Select a doctor and date first</div>';
+    return;
+  }
+
+  grid.innerHTML = '<div style="grid-column:1/-1;font-size:12px;color:var(--muted);font-style:italic;padding:8px 0">Loading slots…</div>';
+
+  try{
+    const r    = await fetch(`/api/slots_taken?doctor=${encodeURIComponent(doctor)}&date=${dt}`);
+    const data = await r.json();
+    const taken = data.taken || [];
+    const slots = meta.time_slots || [];
+
+    grid.innerHTML = slots.map(s=>{
+      const isTaken = taken.includes(s);
+      return `<button class="slot-btn ${isTaken?'taken':''}" onclick="${isTaken?'':''}" ${isTaken?'disabled':''} data-slot="${s}">${s}${isTaken?'<br><span style="font-size:9px">Booked</span>':''}</button>`;
+    }).join('');
+
+    grid.querySelectorAll('.slot-btn:not(.taken)').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        grid.querySelectorAll('.slot-btn').forEach(b=>b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedSlot = btn.dataset.slot;
+        document.getElementById('f-slot').value = selectedSlot;
+      });
+    });
+  } catch(e){
+    grid.innerHTML = '<div style="grid-column:1/-1;color:var(--red);font-size:12px">Could not load slots</div>';
+  }
+}
+
+function confirmBooking(){
+  const name   = document.getElementById('f-name').value.trim();
+  const date   = document.getElementById('f-date').value;
+  const doctor = document.getElementById('f-doctor').value;
+  const ptype  = document.getElementById('f-ptype').value;
+  const slot   = selectedSlot;
+  const notes  = document.getElementById('f-notes').value.trim();
+
+  if(!name)  { toast('Please enter patient name','err'); return; }
+  if(!date)  { toast('Please select a date','err'); return; }
+  if(!doctor){ toast('Please select a doctor','err'); return; }
+  if(!ptype) { toast('Please select patient type','err'); return; }
+  if(!slot)  { toast('Please select a time slot','err'); return; }
+
+  // Show confirm modal
+  document.getElementById('modalTitle').textContent = 'Confirm Appointment';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-row"><span class="modal-lbl">Patient</span><span class="modal-val">${name}</span></div>
+    <div class="modal-row"><span class="modal-lbl">Date</span><span class="modal-val">${date}</span></div>
+    <div class="modal-row"><span class="modal-lbl">Doctor</span><span class="modal-val">${doctor}</span></div>
+    <div class="modal-row"><span class="modal-lbl">Patient Type</span><span class="modal-val">${ptype}</span></div>
+    <div class="modal-row"><span class="modal-lbl">Time Slot</span><span class="modal-val">${slot}</span></div>
+    ${notes?`<div class="modal-row"><span class="modal-lbl">Notes</span><span class="modal-val">${notes}</span></div>`:''}
+  `;
+  document.getElementById('modalBg').classList.add('show');
+
+  document.getElementById('modalConfirm').onclick = async ()=>{
+    const btn = document.getElementById('modalConfirm');
+    btn.textContent='Saving…'; btn.disabled=true;
+    try{
+      const r    = await fetch('/api/book',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({patient_name:name,date,doctor,patient_type:ptype,time_slot:slot,notes})});
+      const data = await r.json();
+      if(data.success){
+        document.getElementById('modalBody').innerHTML = `
+          <div class="modal-apt-id">Appointment ID: <strong>${data.appointment_id}</strong></div>
+          <div class="modal-row"><span class="modal-lbl">Patient</span><span class="modal-val">${name}</span></div>
+          <div class="modal-row"><span class="modal-lbl">Doctor</span><span class="modal-val">${doctor}</span></div>
+          <div class="modal-row"><span class="modal-lbl">Date & Time</span><span class="modal-val">${date} at ${slot}</span></div>
+          <div class="modal-row"><span class="modal-lbl">Status</span><span class="modal-val">Confirmed</span></div>
+        `;
+        document.getElementById('modalTitle').textContent = 'Appointment Confirmed';
+        document.getElementById('modalConfirm').style.display='none';
+        toast(`Appointment ${data.appointment_id} booked successfully`,'ok');
+        clearForm();
+        loadSlots();
+      }
+    } catch(e){ toast('Server error','err'); }
+    btn.textContent='Book Appointment'; btn.disabled=false;
+  };
+}
+
+function closeModal(){
+  document.getElementById('modalBg').classList.remove('show');
+  document.getElementById('modalConfirm').style.display='';
+}
+
+function clearForm(){
+  document.getElementById('f-name').value='';
+  document.getElementById('f-date').value='';
+  document.getElementById('f-doctor').value='';
+  document.getElementById('f-ptype').value='';
+  document.getElementById('f-notes').value='';
+  document.getElementById('f-slot').value='';
+  selectedSlot=null;
+  document.getElementById('slotGrid').innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--muted);font-style:italic;padding:8px 0">Select a doctor and date first</div>';
+  document.getElementById('selDoctor').style.display='none';
+}
+
+// ── RECORDS ──────────────────────────────────────────────────────────────────
+async function loadRecords(){
+  const body = document.getElementById('recBody');
+  try{
+    const r = await fetch('/api/appointments');
+    const rows = await r.json();
+    if(!rows.length){ body.innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--muted);font-style:italic">No records</td></tr>'; return; }
+    const stMap = {'Confirmed':'st-confirmed','Completed':'st-completed','Cancelled':'st-cancelled','No-Show':'st-noshow'};
+    body.innerHTML = rows.slice().reverse().map(r=>`<tr>
+      <td><em>${r.Appointment_ID||''}</em></td>
+      <td>${r.Date||''}</td>
+      <td>${r.Patient_Name||''}</td>
+      <td>${r.Doctor||''}</td>
+      <td>${r.Department||''}</td>
+      <td>${r.Patient_Type||''}</td>
+      <td>${r.Time_Slot||''}</td>
+      <td><span class="st ${stMap[r.Status]||''}">${r.Status||''}</span></td>
+    </tr>`).join('');
+  } catch(e){
+    body.innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--red);font-style:italic">Cannot connect to server</td></tr>';
+  }
+}
+
+// ── SLOT GUIDE ───────────────────────────────────────────────────────────────
+async function loadSlotGuide(){
+  try{
+    const r = await fetch('/api/dashboard');
+    const d = await r.json();
+    renderSlotGuide(d);
+  } catch(e){ toast('Cannot load data','err'); }
+}
+
+function renderSlotGuide(d){
+  const pts = d.pt_stats;
+  const rec = d.recommended_slots;
+
+  // Chart 1 — grouped bar
+  dc('guideChart');
+  charts.guideChart = new Chart(document.getElementById('cGuideChart'),{
+    type:'bar',
+    data:{
+      labels: pts.map(p=>p.type),
+      datasets:[
+        {label:'Current (15 min)', data:pts.map(()=>15), backgroundColor:'rgba(139,32,32,.15)', borderColor:C.red, borderWidth:1.5, borderRadius:3},
+        {label:'Recommended',      data:pts.map(p=>rec[p.type]||20), backgroundColor:C.oliveL, borderColor:C.olive, borderWidth:1.5, borderRadius:3},
+        {label:'Avg Actual',       data:pts.map(p=>p.avg_actual), backgroundColor:C.olive, borderRadius:3},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:11}}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#EDF4E2'},beginAtZero:true,title:{display:true,text:'Minutes',font:{size:10}}}}
+    }
+  });
+
+  // Chart 2 — delay rate horizontal bar
+  dc('guideDelay');
+  const delayColors = pts.map(p=>p.delayed_pct>60?C.red:p.delayed_pct>30?C.amber:C.olive);
+  charts.guideDelay = new Chart(document.getElementById('cGuideDelay'),{
+    type:'bar',
+    data:{
+      labels: pts.map(p=>p.type),
+      datasets:[{label:'Delay Rate %', data:pts.map(p=>p.delayed_pct), backgroundColor:delayColors, borderRadius:3}]
+    },
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'#EDF4E2'},max:100},y:{grid:{display:false}}}
+    }
+  });
+
+  // Table
+  const urgency = {
+    "New Patient":  ["Increase to 30 min","g-warn"],
+    "Follow-up":    ["No change needed",  "g-ok"],
+    "Chronic Case": ["Increase to 45 min","g-urgent"],
+    "Emergency":    ["Block 60 min",       "g-urgent"],
+    "Consultation": ["Increase to 20 min", "g-warn"],
+  };
+  document.getElementById('guideTbody').innerHTML = pts.map(p=>{
+    const r = rec[p.type]||20;
+    const pct = Math.min(100,(p.avg_actual/60)*100);
+    const [urg,urgCls] = urgency[p.type]||['Review','g-warn'];
+    const delayCol = p.delayed_pct>60?C.red:p.delayed_pct>30?C.amber:C.olive;
+    return `<tr>
+      <td style="text-align:left;font-style:italic"><strong>${p.type}</strong></td>
+      <td><span class="g-pill g-current">15 min</span></td>
+      <td><span class="g-pill g-rec">${r} min</span></td>
+      <td>${p.avg_actual} min
+        <div class="diff-bar"><div class="diff-fill" style="width:${pct}%;background:${p.avg_actual>15?C.red:C.olive}"></div></div>
+      </td>
+      <td style="color:${p.avg_delay>5?C.red:C.olive};font-style:italic">${p.avg_delay>0?'+':''}${p.avg_delay} min</td>
+      <td style="color:${delayCol};font-style:italic">${p.delayed_pct}%</td>
+      <td><span class="g-pill ${urgCls}">${urg}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function downloadExcel(){
+  window.location.href='/api/download';
+  toast('Downloading hospital_appointments.xlsx…','ok');
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async ()=>{
+  await loadMeta();
+  loadDashboard();
+  document.getElementById('f-date').valueAsDate = new Date();
+  document.getElementById('modalBg').addEventListener('click', e=>{
+    if(e.target === document.getElementById('modalBg')) closeModal();
+  });
+});
+</script>
+</body>
+</html>
